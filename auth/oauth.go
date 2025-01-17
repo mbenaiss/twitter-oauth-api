@@ -88,3 +88,38 @@ func ExchangeCodeForToken(code, verifier string) (*TokenResponse, error) {
 
 	return &token, nil
 }
+
+// RefreshAccessToken uses a refresh token to obtain a new access token
+func RefreshAccessToken(refreshToken string) (*TokenResponse, error) {
+	data := fmt.Sprintf(
+		"grant_type=refresh_token&refresh_token=%s&client_id=%s",
+		refreshToken,
+		os.Getenv("CLIENT_ID"),
+	)
+
+	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("creating refresh token request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("executing refresh token request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("refresh token endpoint returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var token TokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
+		return nil, fmt.Errorf("decoding refresh token response: %w", err)
+	}
+
+	return &token, nil
+}

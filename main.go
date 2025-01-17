@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
 	"myapp/handlers"
 )
 
@@ -31,6 +31,9 @@ func main() {
 	})
 	router.Use(sessions.Sessions("oauth-session", store))
 
+	// Add token refresh middleware
+	router.Use(handlers.TokenMiddleware())
+
 	// Load HTML templates
 	router.LoadHTMLGlob("templates/*")
 
@@ -39,6 +42,7 @@ func main() {
 	router.GET("/login", handlers.LoginHandler)
 	router.GET("/callback", handlers.CallbackHandler)
 	router.GET("/logout", handlers.LogoutHandler)
+	router.POST("/refresh", handlers.RefreshTokenHandler)
 
 	// Start server on 0.0.0.0:8000
 	log.Println("Server starting on http://0.0.0.0:8000")

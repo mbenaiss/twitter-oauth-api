@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
 	"myapp/auth"
 	"myapp/models"
 )
@@ -95,9 +96,11 @@ func CallbackHandler(c *gin.Context) {
 		return
 	}
 
-	// Store user in session
+	// Store user and tokens in session
 	session.Set("user", user)
 	session.Set("access_token", token.AccessToken)
+	session.Set("refresh_token", token.RefreshToken)
+	session.Set("token_expiry", time.Now().Add(time.Duration(token.ExpiresIn)*time.Second).Unix())
 	session.Save()
 
 	c.Redirect(http.StatusTemporaryRedirect, "/")
@@ -109,4 +112,60 @@ func LogoutHandler(c *gin.Context) {
 	session.Clear()
 	session.Save()
 	c.Redirect(http.StatusTemporaryRedirect, "/")
+}
+
+// RefreshTokenHandler handles token refresh
+func RefreshTokenHandler(c *gin.Context) {
+	session := sessions.Default(c)
+	refreshToken := session.Get("refresh_token")
+	if refreshToken == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No refresh token available"})
+		return
+	}
+
+	token, err := auth.RefreshAccessToken(refreshToken.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to refresh token"})
+		return
+	}
+
+	// Update session with new tokens
+	session.Set("access_token", token.AccessToken)
+	if token.RefreshToken != "" {
+		session.Set("refresh_token", token.RefreshToken)
+	}
+	session.Set("token_expiry", time.Now().Add(time.Duration(token.ExpiresIn)*time.Second).Unix())
+	session.Save()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Token refreshed successfully"})
+}
+
+// TokenMiddleware checks if the access token needs to be refreshed
+func TokenMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		expiry := session.Get("token_expiry")
+		if expiry == nil {
+			c.Next()
+			return
+		}
+
+		// If token expires in less than 5 minutes, refresh it
+		if time.Now().Unix() > expiry.(int64)-300 {
+			refreshToken := session.Get("refresh_token")
+			if refreshToken != nil {
+				token, err := auth.RefreshAccessToken(refreshToken.(string))
+				if err == nil {
+					session.Set("access_token", token.AccessToken)
+					if token.RefreshToken != "" {
+						session.Set("refresh_token", token.RefreshToken)
+					}
+					session.Set("token_expiry", time.Now().Add(time.Duration(token.ExpiresIn)*time.Second).Unix())
+					session.Save()
+				}
+			}
+		}
+
+		c.Next()
+	}
 }
