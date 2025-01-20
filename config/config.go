@@ -15,6 +15,7 @@ type Config struct {
 	// OAuth configuration
 	TwitterClientID     string `envconfig:"TWITTER_CLIENT_ID" required:"true"`
 	TwitterClientSecret string `envconfig:"TWITTER_CLIENT_SECRET" required:"true"`
+	TwitterRedirectURI  string `envconfig:"TWITTER_REDIRECT_URI" required:"true"`
 
 	// API configuration
 	APIKey string `envconfig:"API_KEY" required:"true"`

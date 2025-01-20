@@ -20,7 +20,7 @@ func main() {
 
 	serverAddr := fmt.Sprintf(":%s", cfg.Port)
 
-	authClient := twitter.NewClient(cfg.TwitterClientID, cfg.TwitterClientSecret)
+	authClient := twitter.NewClient(cfg.TwitterClientID, cfg.TwitterClientSecret, cfg.TwitterRedirectURI)
 
 	server := api.NewServer(cfg.Port, cfg.APIKey)
 	server.SetupRoutes(authClient)
