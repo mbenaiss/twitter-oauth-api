@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -19,6 +18,18 @@ const (
 	RedirectURI  = "http://localhost:8000/callback"
 	OAuthScopes  = "tweet.read users.read follows.read offline.access"
 )
+
+type Client struct {
+	clientID     string
+	clientSecret string
+}
+
+func NewClient(clientID, clientSecret string) *Client {
+	return &Client{
+		clientID:     clientID,
+		clientSecret: clientSecret,
+	}
+}
 
 type TokenResponse struct {
 	TokenType    string `json:"token_type"`
@@ -53,11 +64,11 @@ func GenerateState() (string, error) {
 }
 
 // ExchangeCodeForToken exchanges auth code for access token
-func ExchangeCodeForToken(code, verifier string) (*TokenResponse, error) {
+func (c *Client) ExchangeCodeForToken(code, verifier string) (*TokenResponse, error) {
 	data := fmt.Sprintf(
 		"grant_type=authorization_code&code=%s&client_id=%s&redirect_uri=%s&code_verifier=%s",
 		code,
-		os.Getenv("CLIENT_ID"),
+		c.clientID,
 		RedirectURI,
 		verifier,
 	)
@@ -68,7 +79,7 @@ func ExchangeCodeForToken(code, verifier string) (*TokenResponse, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"))
+	req.SetBasicAuth(c.clientID, c.clientSecret)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -90,11 +101,11 @@ func ExchangeCodeForToken(code, verifier string) (*TokenResponse, error) {
 }
 
 // RefreshAccessToken uses a refresh token to obtain a new access token
-func RefreshAccessToken(refreshToken string) (*TokenResponse, error) {
+func (c *Client) RefreshAccessToken(refreshToken string) (*TokenResponse, error) {
 	data := fmt.Sprintf(
 		"grant_type=refresh_token&refresh_token=%s&client_id=%s",
 		refreshToken,
-		os.Getenv("CLIENT_ID"),
+		c.clientID,
 	)
 
 	req, err := http.NewRequest(http.MethodPost, TokenURL, strings.NewReader(data))
@@ -103,7 +114,7 @@ func RefreshAccessToken(refreshToken string) (*TokenResponse, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"))
+	req.SetBasicAuth(c.clientID, c.clientSecret)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -122,4 +133,9 @@ func RefreshAccessToken(refreshToken string) (*TokenResponse, error) {
 	}
 
 	return &token, nil
+}
+
+// GetClientID returns the client ID
+func (c *Client) GetClientID() string {
+	return c.clientID
 }
