@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Verify required environment variables
-	if os.Getenv("CLIENT_ID") == "" || os.Getenv("CLIENT_SECRET") == "" {
+	if os.Getenv("TWITTER_CLIENT_ID") == "" || os.Getenv("TWITTER_CLIENT_SECRET") == "" {
 		log.Fatal("CLIENT_ID and CLIENT_SECRET environment variables must be set")
 	}
 
