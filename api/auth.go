@@ -11,7 +11,8 @@ import (
 
 func loginHandler(authClient *twitter.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authURL, err := authClient.GetAuthURL()
+		baseURL := getServerBaseURL(c)
+		authURL, err := authClient.GetAuthURL(baseURL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Error getting auth URL: " + err.Error(),
@@ -21,6 +22,14 @@ func loginHandler(authClient *twitter.Client) gin.HandlerFunc {
 
 		c.Redirect(http.StatusTemporaryRedirect, authURL)
 	}
+}
+
+func getServerBaseURL(c *gin.Context) string {
+	baseURL := fmt.Sprintf("%s://%s", c.Request.URL.Scheme, c.Request.Host)
+	if c.Request.URL.Scheme == "" {
+		baseURL = fmt.Sprintf("http://%s", c.Request.Host)
+	}
+	return baseURL
 }
 
 func callbackHandler(authClient *twitter.Client) gin.HandlerFunc {
@@ -52,7 +61,8 @@ func callbackHandler(authClient *twitter.Client) gin.HandlerFunc {
 			return
 		}
 
-		token, err := authClient.ExchangeCodeForToken(c.Request.Context(), code)
+		baseURL := getServerBaseURL(c)
+		token, err := authClient.ExchangeCodeForToken(c.Request.Context(), code, baseURL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Error exchanging code for token",
