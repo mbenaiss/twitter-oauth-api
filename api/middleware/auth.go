@@ -9,7 +9,7 @@ import (
 // AuthMiddleware checks if the request has a valid API key
 func AuthMiddleware(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		apiKey := c.GetHeader("X-API-KEY")
+		apiKey := c.Query("api_key")
 		if apiKey != secret || apiKey == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
