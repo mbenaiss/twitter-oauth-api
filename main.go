@@ -1,69 +1,41 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
-	"myapp/handlers"
-	"myapp/auth"
+	"github.com/mbenaiss/twitter-oauth-api/api"
+	"github.com/mbenaiss/twitter-oauth-api/config"
+	"github.com/mbenaiss/twitter-oauth-api/twitter"
 )
 
-type Config struct {
-	TwitterClientID     string
-	TwitterClientSecret string
-	SessionSecret      string
-}
-
 func main() {
-	// Initialize configuration
-	config := Config{
-		TwitterClientID:     os.Getenv("TWITTER_CLIENT_ID"),
-		TwitterClientSecret: os.Getenv("TWITTER_CLIENT_SECRET"),
-		SessionSecret:      os.Getenv("SESSION_SECRET"),
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("Failed to load configuration:", err)
 	}
 
-	// Verify required environment variables
-	if config.TwitterClientID == "" || config.TwitterClientSecret == "" {
-		log.Fatal("TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET environment variables must be set")
-	}
+	serverAddr := fmt.Sprintf(":%s", cfg.Port)
 
-	// Initialize auth client
-	authClient := auth.NewClient(config.TwitterClientID, config.TwitterClientSecret)
+	authClient := twitter.NewClient(cfg.TwitterClientID, cfg.TwitterClientSecret, fmt.Sprintf("http://%s/callback", serverAddr))
 
-	// Initialize Gin
-	router := gin.Default()
+	server := api.NewServer(cfg.Port, cfg.APIKey)
+	server.SetupRoutes(authClient)
+	
+	log.Printf("Server starting on http://%s", serverAddr)
 
-	// Setup session middleware with secure cookie store
-	store := cookie.NewStore([]byte(config.SessionSecret))
-	store.Options(sessions.Options{
-		Path:     "/",
-		MaxAge:   86400, // 1 day
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	})
-	router.Use(sessions.Sessions("oauth-session", store))
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		log.Println("Shutting down server...")
+		os.Exit(0)
+	}()
 
-	// Add token refresh middleware
-	router.Use(handlers.TokenMiddleware(authClient))
-
-	// Load HTML templates
-	router.LoadHTMLGlob("templates/*")
-
-	// Setup routes with auth client
-	router.GET("/", handlers.HomeHandler)
-	router.GET("/login", handlers.LoginHandler(authClient))
-	router.GET("/callback", handlers.CallbackHandler(authClient))
-	router.GET("/logout", handlers.LogoutHandler)
-	router.POST("/refresh", handlers.RefreshTokenHandler(authClient))
-
-	// Start server on 0.0.0.0:8000
-	log.Println("Server starting on http://0.0.0.0:8000")
-	if err := router.Run("0.0.0.0:8000"); err != nil {
+	if err := server.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
