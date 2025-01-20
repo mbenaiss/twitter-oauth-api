@@ -34,8 +34,9 @@ func (s *Server) Start() error {
 // SetupRoutes sets up the routes for the server
 func (s *Server) SetupRoutes(authClient *twitter.Client) {
 	authMiddleware := middleware.AuthMiddleware(s.secret)
-	s.router.Use(authMiddleware).GET("/", loginHandler(authClient))
-	s.router.Use(authMiddleware).POST("/refresh", refreshTokenHandler(authClient))
+	s.router.Use(authMiddleware)
 
+	s.router.GET("/", loginHandler(authClient))
+	s.router.POST("/refresh", refreshTokenHandler(authClient))
 	s.router.GET("/callback", callbackHandler(authClient))
 }

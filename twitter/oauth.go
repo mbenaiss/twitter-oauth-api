@@ -71,7 +71,7 @@ func (c *Client) GetAuthURL() (string, error) {
 // ExchangeCodeForToken exchanges auth code for access token
 func (c *Client) ExchangeCodeForToken(ctx context.Context, code string) (models.TokenResponse, error) {
 	data := fmt.Sprintf(
-		"grant_type=authorization_code&code=%s&client_id=%s&redirect_uri=%s/callback&code_verifier=%s",
+		"grant_type=authorization_code&code=%s&client_id=%s&redirect_uri=%s&code_verifier=%s",
 		code,
 		c.clientID,
 		c.redirectURI,
