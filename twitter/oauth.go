@@ -25,23 +25,21 @@ type Client struct {
 	clientID     string
 	clientSecret string
 	codeVerifier string
-	redirectURI  string
 	httpClient   *http.Client
 }
 
 // NewClient creates a new OAuth client
-func NewClient(clientID, clientSecret, redirectURI string) *Client {
+func NewClient(clientID, clientSecret string) *Client {
 	return &Client{
 		clientID:     clientID,
 		clientSecret: clientSecret,
-		redirectURI:  redirectURI,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
 }
 
-func (c *Client) GetAuthURL() (string, error) {
+func (c *Client) GetAuthURL(baseURL string) (string, error) {
 	// Generate and store PKCE verifier
 	verifier, err := generateCodeVerifier()
 	if err != nil {
@@ -58,10 +56,10 @@ func (c *Client) GetAuthURL() (string, error) {
 
 	// Build authorization URL
 	return fmt.Sprintf(
-		"%s?response_type=code&client_id=%s&redirect_uri=%s&scope=%s&state=%s&code_challenge=%s&code_challenge_method=S256",
+		"%s?response_type=code&client_id=%s&redirect_uri=%s/callback&scope=%s&state=%s&code_challenge=%s&code_challenge_method=S256",
 		authURL,
 		c.clientID,
-		c.redirectURI,
+		baseURL,
 		oauthScopes,
 		state,
 		challenge,
@@ -69,12 +67,12 @@ func (c *Client) GetAuthURL() (string, error) {
 }
 
 // ExchangeCodeForToken exchanges auth code for access token
-func (c *Client) ExchangeCodeForToken(ctx context.Context, code string) (models.TokenResponse, error) {
+func (c *Client) ExchangeCodeForToken(ctx context.Context, code string, baseURL string) (models.TokenResponse, error) {
 	data := fmt.Sprintf(
-		"grant_type=authorization_code&code=%s&client_id=%s&redirect_uri=%s&code_verifier=%s",
+		"grant_type=authorization_code&code=%s&client_id=%s&redirect_uri=%s/callback&code_verifier=%s",
 		code,
 		c.clientID,
-		c.redirectURI,
+		baseURL,
 		c.codeVerifier,
 	)
 

@@ -20,11 +20,11 @@ func main() {
 
 	serverAddr := fmt.Sprintf(":%s", cfg.Port)
 
-	authClient := twitter.NewClient(cfg.TwitterClientID, cfg.TwitterClientSecret, fmt.Sprintf("http://%s/callback", serverAddr))
+	authClient := twitter.NewClient(cfg.TwitterClientID, cfg.TwitterClientSecret)
 
 	server := api.NewServer(cfg.Port, cfg.APIKey)
 	server.SetupRoutes(authClient)
-	
+
 	log.Printf("Server starting on http://%s", serverAddr)
 
 	quit := make(chan os.Signal, 1)
