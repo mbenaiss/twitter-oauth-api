@@ -10,7 +10,7 @@ COPY . .
 
 RUN go test -v ./...
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o app ./main.go
 
 RUN upx app
 
