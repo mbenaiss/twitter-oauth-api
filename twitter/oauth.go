@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	tokenURL    = "https://api.x.com/2/oauth2/token"
 	authURL     = "https://x.com/i/oauth2/authorize"
-	oauthScopes = "tweet.read users.read follows.read offline.access"
+	tokenURL    = "https://api.x.com/2/oauth2/token"
+	oauthScopes = "block.read block.write bookmark.read bookmark.write follows.read follows.write like.read like.write list.read list.write mute.read mute.write offline.access space.read tweet.read tweet.write users.read"
 )
 
 type Client struct {
