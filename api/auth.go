@@ -25,7 +25,6 @@ func loginHandler(authClient *twitter.Client) gin.HandlerFunc {
 
 func callbackHandler(authClient *twitter.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Check for error parameter
 		if errMsg := c.Query("error"); errMsg != "" {
 			errDesc := c.Query("error_description")
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -34,7 +33,6 @@ func callbackHandler(authClient *twitter.Client) gin.HandlerFunc {
 			return
 		}
 
-		// Get required parameters from query
 		state := c.Query("state")
 		if state == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -43,7 +41,6 @@ func callbackHandler(authClient *twitter.Client) gin.HandlerFunc {
 			return
 		}
 
-		// Get authorization code
 		code := c.Query("code")
 		if code == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -60,7 +57,6 @@ func callbackHandler(authClient *twitter.Client) gin.HandlerFunc {
 			return
 		}
 
-		// Get user info
 		user, err := authClient.GetUserInfo(c.Request.Context(), token.AccessToken)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
